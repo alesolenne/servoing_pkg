@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_reseults(q_plot, dq_plot, e_plot, i, f):
+def plot_results(q_plot, dq_plot, e_plot, i, f):
     """PBVS Visual servoing plot for joints position, velocity and error vector.
     """
     q_plot = q_plot[0:i+1,:]
