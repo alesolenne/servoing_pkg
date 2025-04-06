@@ -1,0 +1,8 @@
+<launch>
+
+ <!-- Pubblica le trasformazioni per la simulazione -->
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tip" args="0.187, -0.310, 0.071, -0.065, 0.674, 0.016, 0.736 panda_link8 tool_extremity" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="object" args="-0.1968, 0.7932, 0.4959, -0.4302148, 0.5565271, 0.7103261, -0.0250935 panda_link0 object" />
+
+</launch>

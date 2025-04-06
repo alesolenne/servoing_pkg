@@ -1,5 +1,5 @@
 <launch>
 
-     <node pkg = "servoing_pkg" name = "servoing" type = "servo_wrist.py" output='screen'/> 
+     <node pkg = "servoing_pkg" name = "servoing" type = "servo.py" output='screen'/> 
 
 </launch>
