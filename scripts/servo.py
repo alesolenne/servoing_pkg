@@ -241,7 +241,7 @@ if __name__ == '__main__':
     if use_wrist:
         WRIST_JOINTS_NAME = ['qbmove2_motor_1_joint', 'qbmove2_motor_2_joint', 'qbmove2_shaft_joint', 'qbmove2_deflection_virtual_joint', 'qbmove2_stiffness_preset_virtual_joint']
         WRIST_CONTROLLER_NAME = '/robot/gripper/qbmove2/control/qbmove2_position_and_preset_trajectory_controller/command'
-        WRIST_JOINTS_STATE = '/robot_arm/gripper/qbmove2/joint_states'
+        WRIST_JOINTS_STATE = '/robot/gripper/qbmove2/joint_states'
 
     STIFFNESS_MAX = 1.0
     ERROR_TRANSLATION_THRESHOLD = 0.005
