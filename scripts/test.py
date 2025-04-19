@@ -9,9 +9,8 @@ def publisher_node():
 
     while not rospy.is_shutdown():
         message = "Hello, ROS!"
-        c = kin_sym(0.1,0.1,0.2,-0.1,0.1,0.5,0.2,0.4)
-        a = jac_sym(0.1,0.1,0.2,-0.1,0.1,0.5,0.2,0.4)  # Call the test function with dummy values
-        print(a)
+        c = jac_sym(0.1,0.2,0.0,-0.0,0.0,0.0,0.0)
+        print(c)
         pub.publish(message)
 
 if __name__ == '__main__':
