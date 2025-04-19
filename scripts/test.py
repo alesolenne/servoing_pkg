@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from std_msgs.msg import String
-from servoing_pkg.symbolic import test
-from servoing_pkg.jac import test2
-from servoing_pkg.kinematics import *
+from servoing_pkg.sym_kin import *
 
 def publisher_node():
     rospy.init_node('test_publisher', anonymous=True)
@@ -11,8 +9,8 @@ def publisher_node():
 
     while not rospy.is_shutdown():
         message = "Hello, ROS!"
-        c = test(0.1,0.1,0.2,-0.1,0.1,0.5,0.2,0.4)
-        a = test2(0.1,0.1,0.2,-0.1,0.1,0.5,0.2,0.4)  # Call the test function with dummy values
+        c = kin_sym(0.1,0.1,0.2,-0.1,0.1,0.5,0.2,0.4)
+        a = jac_sym(0.1,0.1,0.2,-0.1,0.1,0.5,0.2,0.4)  # Call the test function with dummy values
         print(a)
         pub.publish(message)
 
