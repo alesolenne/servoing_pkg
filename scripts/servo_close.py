@@ -98,10 +98,11 @@ def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
     # print("Transformation matrix: ", T_0E)
 
     J = jac_sym(q)
-    T_0E = kin_sym(q)
+    # T_0E = kin_sym(q)
+
     T_0B = hom_matrix(trans_0B, rot_0B)
-    T_EV = hom_matrix(trans_EV, rot_EV)
-    T_0V = T_0E @ T_EV
+    T_0V = hom_matrix(trans_EV, rot_EV)
+    # T_0V = T_0E @ T_EV
 
     # Extract translation and rotation components from the transformation matrices
     t_0V, t_0B = T_0V[:3, 3], T_0B[:3, 3]
@@ -157,7 +158,7 @@ def servoing(use_wrist):
     
         # Get the transformation between the end-effector and the tool
         try:
-            (t_EV, q_EV) = listener.lookupTransform(ROBOT_ARM_LINK8, '/tool_extremity', rospy.Time(0))
+            (t_EV, q_EV) = listener.lookupTransform(ROBOT_ARM_LINK0, '/tool_extremity', rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue     # Se ci sono errori prova di nuovo a prendere le tf
@@ -201,6 +202,12 @@ def servoing(use_wrist):
 
         # Check for goal
         # q = check_q_goal(q, use_wrist)
+        print(q)
+        rospy.sleep(0.5*1/CONTROL_FREQUENCY)
+        joint_states = rospy.wait_for_message('/joint_states', JointState)
+        g = np.array(joint_states.position).reshape((7, 1))
+        print(g)
+
         norm_e_t = np.linalg.norm(e[:3, :], 2)
         norm_e_o = np.linalg.norm(e[3:, :], 2)
         rospy.loginfo(f"Translation error norm: {norm_e_t}")
@@ -271,10 +278,10 @@ if __name__ == '__main__':
             pub_wrist = rospy.Publisher(WRIST_CONTROLLER_NAME, JointTrajectory, queue_size=10)
 
     rospy.loginfo("Starting grasp phase")
-    response_grasp = call_service("grasp_task_wrist_tool_service", SetBool, True)
+    response = call_service("grasp_tool_task", SetBool, True)
 
-    if response_grasp:
-        rospy.loginfo(response_grasp.message)
+    if response:
+        rospy.loginfo(response.message)
 
     # if use_wrist:
     #     rospy.loginfo("Setting wrist stiffness to maximum")
@@ -285,14 +292,11 @@ if __name__ == '__main__':
 
     rospy.loginfo("Starting visual servoing")
     if servoing(use_wrist):       
-        rospy.loginfo("Starting throw phase")
-        
-        #TO DO: Riempi per bene la chiamata al servizio, inserisci srv grasp
-        response_throw = call_service("throw_task_wrist_tool_servo_service", SetBool, True)
-        
-        if response_throw:
-            rospy.loginfo(response_throw.message)
-            response_replace = call_service("replace_task_wrist_tool_service", SetBool, True)
+        rospy.loginfo("Starting place phase")
+
+        response = call_service("place_tool_task", SetBool, True)
+        if response:
+            rospy.loginfo(response.message)
             if enable_plotting:
                 plot_results(q_plot, dq_plot, e_plot, i, CONTROL_FREQUENCY) 
     else:

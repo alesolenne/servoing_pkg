@@ -2,7 +2,15 @@ import numpy as np
 
 ## Kinematic function for Panda robot arm
 
-def kin_sym(q_1, q_2, q_3, q_4, q_5, q_6, q_7):
+def kin_sym(q):
+
+    q_1 = q[0][0]
+    q_2 = q[1][0]
+    q_3 = q[2][0]
+    q_4 = q[3][0]
+    q_5 = q[4][0]
+    q_6 = q[5][0]
+    q_7 = q[6][0]
 
     t2 = np.cos(q_1)
     t3 = np.cos(q_2)
@@ -333,7 +341,15 @@ def kin_sym(q_1, q_2, q_3, q_4, q_5, q_6, q_7):
     T_07 = np.hstack([mt1, mt2, mt3, mt4]).reshape(4, 4)
     return T_07
 
-def jac_sym(q_1, q_2, q_3, q_4, q_5, q_6, q_7):
+def jac_sym(q):
+
+    q_1 = q[0][0]
+    q_2 = q[1][0]
+    q_3 = q[2][0]
+    q_4 = q[3][0]
+    q_5 = q[4][0]
+    q_6 = q[5][0]
+    q_7 = q[6][0]
 
     t2 = np.cos(q_1)
     t3 = np.cos(q_2)
@@ -882,7 +898,16 @@ def jac_sym(q_1, q_2, q_3, q_4, q_5, q_6, q_7):
 
 ## Kinematic function for Panda robot arm with wrist
 
-def kin_sym_wrist(q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8):
+def kin_sym_wrist(q):
+    
+    q_1 = q[0][0]
+    q_2 = q[1][0]
+    q_3 = q[2][0]
+    q_4 = q[3][0]
+    q_5 = q[4][0]
+    q_6 = q[5][0]
+    q_7 = q[6][0]
+    q_8 = q[7][0]
 
     cos_vals = np.cos([q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8])
     sin_vals = np.sin([q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8])
@@ -1325,7 +1350,16 @@ def kin_sym_wrist(q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8):
     T_08 = np.hstack([mt1, mt2, mt3, mt4]).reshape(4, 4)
     return T_08
 
-def jac_sym_wrist(q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8):
+def jac_sym_wrist(q):
+
+    q_1 = q[0][0]
+    q_2 = q[1][0]
+    q_3 = q[2][0]
+    q_4 = q[3][0]
+    q_5 = q[4][0]
+    q_6 = q[5][0]
+    q_7 = q[6][0]
+    q_8 = q[7][0]
 
     t2 = np.cos(q_1)
     t3 = np.cos(q_2)
