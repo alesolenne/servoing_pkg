@@ -61,6 +61,8 @@ catkin_python_setup()
 add_service_files(
   FILES
     set_stiffness.srv
+    grasp.srv
+    task.srv
   )
 
 ## Generate actions in the 'action' folder
