@@ -1,5 +1,12 @@
 <launch>
 
-     <node pkg = "servoing_pkg" name = "servoing" type = "servo.py" output='screen'/> 
+     <node pkg = "servoing_pkg" name = "servoing" type = "servo.py" output='screen'> 
+
+          <param name="use_wrist" value="False" />
+          <param name="simulator" value="True" />
+          <param name="enable_plotting" value="True" />
+          <param name="n_objects" value="2" />
+
+     </node>
 
 </launch>

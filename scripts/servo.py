@@ -137,7 +137,7 @@ def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
     # Return the computed joint velocities and the error vector
     return q_dot, e
 
-def servoing(use_wrist):
+def servoing(use_wrist, k):
       """Perform visual servoing."""
 
       # Get the initial joint state
@@ -149,7 +149,7 @@ def servoing(use_wrist):
       # Get the transformation between the object and the robot base
       while True:
         try:
-            (t_0B, q_0B) = listener.lookupTransform(ROBOT_ARM_LINK0, '/object', rospy.Time(0))
+            (t_0B, q_0B) = listener.lookupTransform(ROBOT_ARM_LINK0, '/object' + str(k), rospy.Time(0))
             break
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
@@ -233,6 +233,7 @@ if __name__ == '__main__':
     use_wrist = rospy.get_param('~use_wrist', False)
     enable_plotting = rospy.get_param('~enable_plotting', False)
     simulator = rospy.get_param('~simulator', True)
+    n_objects = rospy.get_param('~n_objects', 1)
 
     # Constants
     if simulator:
@@ -258,16 +259,6 @@ if __name__ == '__main__':
     ERROR_ORIENTATION_THRESHOLD = 0.01
     CONTROL_FREQUENCY = 1000.0
 
-    if enable_plotting:
-        # Preallocate arrays for plotting
-        estimated_duration = 120  # seconds (adjust based on expected runtime)
-        max_steps = int(CONTROL_FREQUENCY * estimated_duration)
-
-        q_plot = np.zeros((max_steps, 7))
-        dq_plot = np.zeros((max_steps, 7))
-        e_plot = np.zeros((max_steps, 6))
-        i= 0
-
     pub_arm = rospy.Publisher(ROBOT_CONTROLLER_NAME, JointTrajectory, queue_size=10)
 
     if use_wrist:
@@ -278,69 +269,81 @@ if __name__ == '__main__':
     rospy.loginfo(response_grasp.message)
 
     if response_grasp.success:
-
-        if use_wrist:
-            rospy.loginfo("Setting wrist stiffness to maximum")
-            stiffness_request = set_stiffnessRequest(stiffness_value=STIFFNESS_MAX)
-            response = call_service("stiffness_service", set_stiffness, stiffness_request)
-            if response.result:
-                rospy.loginfo("Stiffness set successfully")
-            else :
-                rospy.loginfo("Stiffness not set correctly")
-
-        rospy.loginfo("Starting visual servoing")
-
-        if servoing(use_wrist):
-
-            rospy.loginfo("Starting throw phase")
+                
+        for k in range(n_objects):
             
-            throw_request = graspRequest()
-            throw_pose = Pose()
+            if enable_plotting:
+                # Preallocate arrays for plotting
+                estimated_duration = 120  # seconds (adjust based on expected runtime)
+                max_steps = int(CONTROL_FREQUENCY * estimated_duration)
 
-            throw_pose.position.x = 0.0
-            throw_pose.position.y = 0.0
-            throw_pose.position.z = 0.0
-            throw_pose.orientation.x = 0.0
-            throw_pose.orientation.y = 0.0
-            throw_pose.orientation.z = 0.0
-            throw_pose.orientation.w = 1.0
-            throw_request.grasp_pose = throw_pose
- 
-            throw_request.data = True
-            throw_request.type_of_grasp = "power"
+                q_plot = np.zeros((max_steps, 7))
+                dq_plot = np.zeros((max_steps, 7))
+                e_plot = np.zeros((max_steps, 6))
+                i= 0
 
-            throw_request.object_mass.data = 0.0
-            throw_request.object_name = "object" #inserisci nome posa di grasp dalla visione
-            response_throw = call_service("throw_task_wrist_tool_servo_service", grasp, throw_request)
-            rospy.loginfo(response_throw.message)
+            if use_wrist:
+                rospy.loginfo("Setting wrist stiffness to maximum")
+                stiffness_request = set_stiffnessRequest(stiffness_value=STIFFNESS_MAX)
+                response = call_service("stiffness_service", set_stiffness, stiffness_request)
+                if response.result:
+                    rospy.loginfo("Stiffness set successfully")
+                else :
+                    rospy.loginfo("Stiffness not set correctly")
 
-            if response_throw.success:
+            rospy.loginfo("Starting visual servoing")
 
-                rospy.loginfo("Replace the tool")
+            if servoing(use_wrist, k):
 
-                response_replace = call_service("replace_task_wrist_tool_service", SetBool, True)
-                rospy.loginfo(response_replace.message)
+                rospy.loginfo("Starting throw phase")
+                
+                throw_request = graspRequest()
+                throw_pose = Pose()
 
-                if response_replace:
+                throw_pose.position.x = 0.0
+                throw_pose.position.y = 0.0
+                throw_pose.position.z = 0.0
+                throw_pose.orientation.x = 0.0
+                throw_pose.orientation.y = 0.0
+                throw_pose.orientation.z = 0.0
+                throw_pose.orientation.w = 1.0
+                throw_request.grasp_pose = throw_pose
+    
+                throw_request.data = True
+                throw_request.type_of_grasp = "power"
 
-                    rospy.loginfo("Coming back to home configuration")
+                throw_request.object_mass.data = 0.0
+                throw_request.object_name = "object" + str(k) #inserisci nome posa di grasp dalla visione
+                response_throw = call_service("throw_task_wrist_tool_servo_service", grasp, throw_request)
+                rospy.loginfo(response_throw.message)
 
-                    home_request = taskRequest()
+                if response_throw.success:
 
-                    home_request.task = "home"
-                    home_request.data = True
-                    home_request.use_wrist = True
-                    home_request.use_tool = True
-                    home_request.object_mass.data = 0.0
+                    rospy.loginfo("Replace the tool")
 
-                    response_home = call_service("joint_config_service", task, home_request)
-                    rospy.loginfo(response_home.message)
+                    response_replace = call_service("replace_task_wrist_tool_service", SetBool, True)
+                    rospy.loginfo(response_replace.message)
 
-                    if response_home.success:
-                        rospy.loginfo("Task performed correctly!")
+                    if response_replace:
 
-                        if enable_plotting:
-                            plot_results(q_plot, dq_plot, e_plot, i, CONTROL_FREQUENCY) 
+                        rospy.loginfo("Coming back to home configuration")
 
-        else:
-            rospy.logerr("Visual servoing failed!")
+                        home_request = taskRequest()
+
+                        home_request.task = "home"
+                        home_request.data = True
+                        home_request.use_wrist = True
+                        home_request.use_tool = True
+                        home_request.object_mass.data = 0.0
+
+                        response_home = call_service("joint_config_service", task, home_request)
+                        rospy.loginfo(response_home.message)
+
+                        if response_home.success:
+                            rospy.loginfo("Task performed correctly!")
+
+                            if enable_plotting:
+                                plot_results(q_plot, dq_plot, e_plot, i, CONTROL_FREQUENCY) 
+
+            else:
+                rospy.logerr("Visual servoing failed!")
