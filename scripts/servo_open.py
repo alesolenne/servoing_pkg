@@ -48,9 +48,9 @@ def initialize_state(use_wrist):
 def check_q_goal(q_goal, use_wrist):
     """Check if the robot and wrist have reached the desired position."""
     while True:
-        joint_states = rospy.wait_for_message('/joint_states', JointState)
+        joint_states = rospy.wait_for_message(ROBOT_JOINTS_STATE, JointState)
         if use_wrist:
-            wrist_states = rospy.wait_for_message('/robot_arm/gripper/qbmove2/joint_states', JointState)
+            wrist_states = rospy.wait_for_message(WRIST_JOINTS_STATE, JointState)
 
         if joint_states.name == ROBOT_JOINTS_NAME and (not use_wrist or wrist_states.name == WRIST_JOINTS_NAME):
             q_arm_actual = np.array(joint_states.position).reshape((7, 1))
@@ -100,8 +100,23 @@ def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
     # print("Jacobian: ", J)
     # print("Transformation matrix: ", T_0E)
 
-    J = jac_sym(q)
-    T_0E = kin_sym(q)
+    if use_wrist:
+
+        J = jac_sym(q)
+        T_0E = kin_sym(q)
+
+    else:
+
+        J = kin_sym_wrist(q)
+        T = jac_sym_wrist(q)
+
+        # Transform about x of pi rad and y of pi/2 rad
+        T_aux = np.array([[0, 0, 1, 0],
+                          [0, -1, 0, 0],
+                          [1, 0, 0, 0],
+                          [0, 0, 0, 1]])
+        T_0E = T @ T_aux
+
     T_0B = hom_matrix(trans_0B, rot_0B)
     T_EV = hom_matrix(trans_EV, rot_EV)
     T_0V = T_0E @ T_EV
@@ -160,7 +175,7 @@ def servoing(use_wrist, k):
     
         # Get the transformation between the end-effector and the tool
         try:
-            (t_EV, q_EV) = listener.lookupTransform(ROBOT_ARM_LINK8, '/tool_extremity', rospy.Time(0))
+            (t_EV, q_EV) = listener.lookupTransform(TCP_LINK, '/tool_extremity', rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue     # Se ci sono errori prova di nuovo a prendere le tf
@@ -239,13 +254,13 @@ if __name__ == '__main__':
     if simulator:
         ROBOT_JOINTS_NAME = ['panda_joint1', 'panda_joint2', 'panda_joint3', 'panda_joint4', 'panda_joint5', 'panda_joint6', 'panda_joint7']
         ROBOT_ARM_LINK0 = '/panda_link0'
-        ROBOT_ARM_LINK8 = '/panda_link8'
+        TCP_LINK = '/panda_link8'
         ROBOT_CONTROLLER_NAME = '/position_joint_trajectory_controller/command'
         ROBOT_JOINTS_STATE = '/joint_states'
     else:
         ROBOT_JOINTS_NAME = ['robot_arm_joint1', 'robot_arm_joint2', 'robot_arm_joint3', 'robot_arm_joint4', 'robot_arm_joint5', 'robot_arm_joint6', 'robot_arm_joint7']
         ROBOT_ARM_LINK0 = '/robot_arm_link0'
-        ROBOT_ARM_LINK8 = '/robot_arm_link8'
+        TCP_LINK = '/qbhand2m1_base_link'
         ROBOT_CONTROLLER_NAME = '/robot/arm/position_joint_trajectory_controller/command'
         ROBOT_JOINTS_STATE = '/robot/joint_states'
 
@@ -253,6 +268,7 @@ if __name__ == '__main__':
         WRIST_JOINTS_NAME = ['qbmove2_motor_1_joint', 'qbmove2_motor_2_joint', 'qbmove2_shaft_joint', 'qbmove2_deflection_virtual_joint', 'qbmove2_stiffness_preset_virtual_joint']
         WRIST_CONTROLLER_NAME = '/robot/gripper/qbmove2/control/qbmove2_position_and_preset_trajectory_controller/command'
         WRIST_JOINTS_STATE = '/robot/gripper/qbmove2/joint_states'
+        TCP_LINK = '/wrist_base_link'
 
     STIFFNESS_MAX = 1.0
     ERROR_TRANSLATION_THRESHOLD = 0.005
@@ -280,7 +296,7 @@ if __name__ == '__main__':
                 q_plot = np.zeros((max_steps, 7))
                 dq_plot = np.zeros((max_steps, 7))
                 e_plot = np.zeros((max_steps, 6))
-                i= 0
+                i = 0
 
             if use_wrist:
                 rospy.loginfo("Setting wrist stiffness to maximum")
