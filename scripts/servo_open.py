@@ -102,11 +102,6 @@ def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
 
     if use_wrist:
 
-        J = jac_sym(q)
-        T_0E = kin_sym(q)
-
-    else:
-
         J = kin_sym_wrist(q)
         T = jac_sym_wrist(q)
 
@@ -116,6 +111,11 @@ def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
                           [1, 0, 0, 0],
                           [0, 0, 0, 1]])
         T_0E = T @ T_aux
+   
+    else:
+
+        J = jac_sym(q)
+        T_0E = kin_sym(q)
 
     T_0B = hom_matrix(trans_0B, rot_0B)
     T_EV = hom_matrix(trans_EV, rot_EV)
