@@ -251,7 +251,6 @@ if __name__ == '__main__':
 
     # Get parameters from the parameter server
     use_wrist = rospy.get_param('~use_wrist', False)
-    enable_plotting = rospy.get_param('~enable_plotting', True)
     simulator = rospy.get_param('~simulator', True)
     n_objects = rospy.get_param('~n_objects', 1)
 
@@ -299,7 +298,7 @@ if __name__ == '__main__':
                 rospy.loginfo("Visual servoing completed!")
 
             else:
-                
+
                 rospy.logerr("Visual servoing failed!")
         
         else :
