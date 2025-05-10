@@ -6,15 +6,13 @@ import tf
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import Header, Bool
-from std_srvs.srv import SetBool
-from geometry_msgs.msg import Pose
 
 from servoing_pkg.kinematics import *
 from servoing_pkg.sym_kin import *
 from servoing_pkg.tools import *
 from servoing_pkg.plots import *
 from pytransform3d.rotations import axis_angle_from_matrix
-from servoing_pkg.srv import set_stiffness, set_stiffnessRequest
+from servoing_pkg.msg import servo_init
 
 def call_service(service_name, service_type, request):
     """Call a ROS service and handle exceptions."""
@@ -156,7 +154,7 @@ def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
     # Return the computed joint velocities and the error vector
     return q_dot, e
 
-def servoing(use_wrist):
+def servoing(use_wrist, object_name):
       """Perform visual servoing."""
 
       # Get the initial joint state
@@ -168,7 +166,7 @@ def servoing(use_wrist):
       # Get the transformation between the object and the robot base
       while True:
         try:
-            (t_0B, q_0B) = listener.lookupTransform(ROBOT_ARM_LINK0, '/object', rospy.Time(0))
+            (t_0B, q_0B) = listener.lookupTransform(ROBOT_ARM_LINK0, '/' + object_name, rospy.Time(0))
             break
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
@@ -234,6 +232,7 @@ def servoing(use_wrist):
 
         if norm_e_t < ERROR_TRANSLATION_THRESHOLD and norm_e_o < ERROR_ORIENTATION_THRESHOLD:
             flag_servo.data  = True
+            pub_finish_servo.publish(flag_servo)
             rospy.loginfo("Visual servoing completed!")
             return True
         
@@ -241,7 +240,7 @@ def servoing(use_wrist):
 
             flag_servo.data = False
         
-        pub_finish_servo(flag_servo)
+        pub_finish_servo.publish(flag_servo)
 
 if __name__ == '__main__':
 
@@ -287,13 +286,14 @@ if __name__ == '__main__':
                         
     while not rospy.is_shutdown():
       
-        init_servo = rospy.wait_for_message("/servo_start_task", Bool)
+        init_servo = rospy.wait_for_message("/servo_start_task", servo_init)
 
         if init_servo.data == True:
 
             rospy.loginfo("Starting visual servoing")
+            object_name = init_servo.object_name
 
-            if servoing(use_wrist):
+            if servoing(use_wrist, object_name):
 
                 rospy.loginfo("Visual servoing completed!")
 

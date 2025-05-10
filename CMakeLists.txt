@@ -8,12 +8,12 @@ project(servoing_pkg)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  joint_state_publisher
-  robot_state_publisher
   roscpp
   rospy
-  xacro
   tf
+  geometry_msgs
+  std_msgs
+  message_generation
 )
 
 catkin_python_setup()
@@ -51,16 +51,14 @@ catkin_python_setup()
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+# Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  servo_init.msg
+)
 
 add_service_files(
   FILES
-    set_stiffness.srv
     grasp.srv
     task.srv
   )
@@ -75,7 +73,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
    DEPENDENCIES
-   geometry_msgs sensor_msgs std_msgs
+   geometry_msgs std_msgs
 )
 
 ################################################

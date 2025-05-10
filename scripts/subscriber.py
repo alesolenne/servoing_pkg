@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import rospy
 from std_msgs.msg import Bool
 
 def callback(data):
-    rospy.loginfo("Finisched task!!")
+    rospy.loginfo(data.data)
     
 def listener():
 

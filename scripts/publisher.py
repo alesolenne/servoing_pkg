@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
 import rospy
-from std_msgs.msg import Bool
+from servoing_pkg.msg import servo_init
 
 def talker():
 
-    pub = rospy.Publisher("/servo_start_task", Bool, queue_size=10)
+    pub = rospy.Publisher("/servo_start_task", servo_init, queue_size=10)
+
     rospy.init_node('talker', anonymous=True)
-    rate = rospy.Rate(0.01) # 10hz
-    a = Bool()
+    rate = rospy.Rate(10) # 10hz
+    a = servo_init()
     a.data = True
+    a.object_name = "object"
 
     while not rospy.is_shutdown():
 
