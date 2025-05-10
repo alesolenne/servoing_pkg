@@ -280,7 +280,7 @@ if __name__ == '__main__':
     CONTROL_FREQUENCY = 100.0
 
     pub_arm = rospy.Publisher(ROBOT_CONTROLLER_NAME, JointTrajectory, queue_size = 10)
-    pub_finish_servo = rospy.Publisher("/servo_finish_task", SetBool, queue_size= 10)
+    pub_finish_servo = rospy.Publisher("/servo_finish_task", Bool, queue_size= 10)
 
     if use_wrist:
             pub_wrist = rospy.Publisher(WRIST_CONTROLLER_NAME, JointTrajectory, queue_size=10)
