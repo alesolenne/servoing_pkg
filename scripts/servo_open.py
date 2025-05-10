@@ -260,7 +260,7 @@ if __name__ == '__main__':
     else:
         ROBOT_JOINTS_NAME = ['robot_arm_joint1', 'robot_arm_joint2', 'robot_arm_joint3', 'robot_arm_joint4', 'robot_arm_joint5', 'robot_arm_joint6', 'robot_arm_joint7']
         ROBOT_ARM_LINK0 = '/robot_arm_link0'
-        TCP_LINK = '/qbhand2m1_base_link'
+        TCP_LINK = '/wrist_base_link'
         ROBOT_CONTROLLER_NAME = '/robot/arm/position_joint_trajectory_controller/command'
         ROBOT_JOINTS_STATE = '/robot/joint_states'
 

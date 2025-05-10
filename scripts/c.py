@@ -66,7 +66,7 @@ def check_q_goal(q_goal, use_wrist):
             if np.linalg.norm(e_q, 2) < 0.01:
                 return q_actual
         
-def feedback(trans_0B, rot_0B, trans_0V, rot_0V, q, use_wrist):
+def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
     """PBVS Visual servoing control law.
 
     Parameters
@@ -103,24 +103,26 @@ def feedback(trans_0B, rot_0B, trans_0V, rot_0V, q, use_wrist):
     if use_wrist:
 
         J = kin_sym_wrist(q)
-        # T = jac_sym_wrist(q)
+        T = jac_sym_wrist(q)
 
-        # # Transform about x of pi rad and y of pi/2 rad
-        # T_aux = np.array([[0, 0, 1, 0],
-        #                   [0, -1, 0, 0],
-        #                   [1, 0, 0, 0],
-        #                   [0, 0, 0, 1]])
-        # T_0E = T @ T_aux
-
+        # Transform about x of pi rad and y of pi/2 rad
+        T_aux = np.array([[0, 0, 1, 0],
+                          [0, -1, 0, 0],
+                          [1, 0, 0, 0],
+                          [0, 0, 0, 1]])
+        T_0E = T @ T_aux
+   
     else:
 
-        J = jac_sym(q)
-        # T_0E = kin_sym(q)
+        J_8 = jac_sym(q)
+        T_0E = kin_sym(q)
 
-        
     T_0B = hom_matrix(trans_0B, rot_0B)
-    T_0V = hom_matrix(trans_0V, rot_0V)
-    # T_0V = T_0E @ T_EV
+    T_EV = hom_matrix(trans_EV, rot_EV)
+
+
+    # T_EE = np.array([[1,0,0,116],[0,1,0,-0.002],[0,0,1,0.036],[0,0,0,1]])
+    T_0V = T_0E @ T_EV
 
     # Extract translation and rotation components from the transformation matrices
     t_0V, t_0B = T_0V[:3, 3], T_0B[:3, 3]
@@ -141,6 +143,9 @@ def feedback(trans_0B, rot_0B, trans_0V, rot_0V, q, use_wrist):
     L = np.block([[I, Z], [Z, np.linalg.pinv(L_e)]])
 
     # Compute the pseudo-inverse of the Jacobian
+    t_EV = T_EV[0:3, 3]
+    Adj = np.block([[I, -skew_matrix(t_EV)], [Z, I]])
+    J = Adj @ J_8 
     J_pinv = np.linalg.pinv(J)
     
     # Define proportional gain matrices for position and orientation control
@@ -173,21 +178,17 @@ def servoing(use_wrist, k):
       rate = rospy.Rate(CONTROL_FREQUENCY)
 
       while not rospy.is_shutdown():
-    
+        t1= rospy.Time.now()
+        
         # Get the transformation between the end-effector and the tool
         try:
-            (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, '/tool_extremity', rospy.Time(0))
+            (t_EV, q_EV) = listener.lookupTransform(TCP_LINK, '/tool_extremity', rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue     # Se ci sono errori prova di nuovo a prendere le tf
-        try:
-            (t_CV, q_CV) = listener.lookupTransform( '/panda_link8',  '/tool_extremity', rospy.Time(0))
-
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                continue   
          
         # Get the control law and error state
-        q_dot, e = feedback(t_0B, q_0B, t_0V, q_0V, q, use_wrist)        
+        q_dot, e = feedback(t_0B, q_0B, t_EV, q_EV, q, use_wrist)        
 
         # Update the joint state
         q = q + q_dot*1/CONTROL_FREQUENCY
@@ -225,7 +226,6 @@ def servoing(use_wrist, k):
 
         # Check for goal
         # q = check_q_goal(q, use_wrist)
-        rospy.sleep(1/CONTROL_FREQUENCY)
         norm_e_t = np.linalg.norm(e[:3, :], 2)
         norm_e_o = np.linalg.norm(e[3:, :], 2)
         rospy.loginfo(f"Translation error norm: {norm_e_t}")
@@ -239,11 +239,11 @@ def servoing(use_wrist, k):
             q_plot[i, :] = q[:7, 0].flatten()
             i += 1
 
+        rospy.sleep(1/CONTROL_FREQUENCY)
+
         if norm_e_t < ERROR_TRANSLATION_THRESHOLD and norm_e_o < ERROR_ORIENTATION_THRESHOLD:
             rospy.loginfo("Visual servoing completed!")
             return True
-
-        rate.sleep()
 
 if __name__ == '__main__':
 
@@ -253,7 +253,7 @@ if __name__ == '__main__':
 
     # Get parameters from the parameter server
     use_wrist = rospy.get_param('~use_wrist', False)
-    enable_plotting = rospy.get_param('~enable_plotting', False)
+    enable_plotting = rospy.get_param('~enable_plotting', True)
     simulator = rospy.get_param('~simulator', True)
     n_objects = rospy.get_param('~n_objects', 1)
 
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     STIFFNESS_MAX = 1.0
     ERROR_TRANSLATION_THRESHOLD = 0.005
     ERROR_ORIENTATION_THRESHOLD = 0.01
-    CONTROL_FREQUENCY = 1000.0
+    CONTROL_FREQUENCY = 100.0
 
     pub_arm = rospy.Publisher(ROBOT_CONTROLLER_NAME, JointTrajectory, queue_size=10)
 
