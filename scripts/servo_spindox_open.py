@@ -229,16 +229,10 @@ def servoing(use_wrist, object_name):
         rospy.sleep(1/CONTROL_FREQUENCY)
 
         flag_servo = Bool()
+        flag_servo.data  = False
 
         if norm_e_t < ERROR_TRANSLATION_THRESHOLD and norm_e_o < ERROR_ORIENTATION_THRESHOLD:
-            flag_servo.data  = True
-            pub_finish_servo.publish(flag_servo)
-            rospy.loginfo("Visual servoing completed!")
             return True
-        
-        else :
-
-            flag_servo.data = False
         
         pub_finish_servo.publish(flag_servo)
 
@@ -295,6 +289,10 @@ if __name__ == '__main__':
 
             if servoing(use_wrist, object_name):
 
+                flag_servo = Bool()
+                flag_servo.data  = False
+                pub_finish_servo.publish(flag_servo)
+                
                 rospy.loginfo("Visual servoing completed!")
 
             else:
