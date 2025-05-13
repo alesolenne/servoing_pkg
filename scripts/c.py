@@ -14,7 +14,6 @@ from servoing_pkg.sym_kin import *
 from servoing_pkg.tools import *
 from servoing_pkg.plots import *
 from pytransform3d.rotations import axis_angle_from_matrix
-from servoing_pkg.srv import set_stiffness, set_stiffnessRequest
 from servoing_pkg.srv import grasp, graspRequest
 from servoing_pkg.srv import task, taskRequest
 
@@ -304,15 +303,6 @@ if __name__ == '__main__':
                 dq_plot = np.zeros((max_steps, 7))
                 e_plot = np.zeros((max_steps, 6))
                 i = 0
-
-            if use_wrist:
-                rospy.loginfo("Setting wrist stiffness to maximum")
-                stiffness_request = set_stiffnessRequest(stiffness_value=STIFFNESS_MAX)
-                response = call_service("stiffness_service", set_stiffness, stiffness_request)
-                if response.result:
-                    rospy.loginfo("Stiffness set successfully")
-                else :
-                    rospy.loginfo("Stiffness not set correctly")
 
             rospy.loginfo("Starting visual servoing")
 

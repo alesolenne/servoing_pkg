@@ -10,20 +10,8 @@ from std_msgs.msg import Header, Bool
 from servoing_pkg.kinematics import *
 from servoing_pkg.sym_kin import *
 from servoing_pkg.tools import *
-from servoing_pkg.plots import *
 from pytransform3d.rotations import axis_angle_from_matrix
 from servoing_pkg.msg import servo_init
-
-def call_service(service_name, service_type, request):
-    """Call a ROS service and handle exceptions."""
-    rospy.wait_for_service(service_name)
-    try:
-        client = rospy.ServiceProxy(service_name, service_type)
-        response = client(request)
-        return response
-    except rospy.ServiceException as e:
-        rospy.logerr(f"Service call to {service_name} failed: {e}")
-        return None
 
 def initialize_state(use_wrist):
     """Initialize the robot and wrist state."""
