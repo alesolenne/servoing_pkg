@@ -6,6 +6,7 @@ import tf
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import Header, Bool
+from geometry_msgs.msg import Pose
 
 from servoing_pkg.kinematics import *
 from servoing_pkg.sym_kin import *
@@ -146,7 +147,7 @@ def servoing(use_wrist, object_name):
 
       # Temporary variable for the time
       x = 0.0
-    
+
       # Get the transformation between the object and the robot base
       while True:
         try:
@@ -161,12 +162,12 @@ def servoing(use_wrist, object_name):
 
         # Get the transformation between the end-effector and the tool
         try:
-            (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, '/tool_extremity', rospy.Time(0))
+            (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, '/panda_link8', rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue     # Se ci sono errori prova di nuovo a prendere le tf
         try:
-            (t_EV, q_EV) = listener.lookupTransform('/panda_link8',  '/tool_extremity', rospy.Time(0))
+            (t_EV, q_EV) = listener.lookupTransform('/panda_link8',  '/panda_link8', rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue   
@@ -214,6 +215,17 @@ def servoing(use_wrist, object_name):
 
         norm_e_t = np.linalg.norm(e[:3, :], 2)
         norm_e_o = np.linalg.norm(e[3:, :], 2)
+
+        errors = Pose()
+        errors.position.x = e[0,:]
+        errors.position.y = e[1,:]
+        errors.position.z = e[2,:]
+        errors.orientation.w = 0.0
+        errors.orientation.x = e[3,:]
+        errors.orientation.y = e[4,:]
+        errors.orientation.z = e[5,:]
+        pub_err.publish(errors)
+
         rospy.loginfo(f"Translation error norm: {norm_e_t}")
         rospy.loginfo(f"Orientation error norm: {norm_e_o}")
 
@@ -255,11 +267,12 @@ if __name__ == '__main__':
     STIFFNESS_MAX = 1.0
     ERROR_TRANSLATION_THRESHOLD = 0.005
     ERROR_ORIENTATION_THRESHOLD = 0.01
-    CONTROL_FREQUENCY = 1000.0
+    CONTROL_FREQUENCY = 100.0
 
     pub_arm = rospy.Publisher(ROBOT_CONTROLLER_NAME, JointTrajectory, queue_size=10)
     pub_finish_servo = rospy.Publisher("/servo_finish_task", Bool, queue_size= 10)
-
+    pub_err = rospy.Publisher("/servo_error",Pose,queue_size=10)
+    
     if use_wrist:
             pub_wrist = rospy.Publisher(WRIST_CONTROLLER_NAME, JointTrajectory, queue_size=10)
 

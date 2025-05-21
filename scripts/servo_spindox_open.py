@@ -258,7 +258,7 @@ if __name__ == '__main__':
     STIFFNESS_MAX = 1.0
     ERROR_TRANSLATION_THRESHOLD = 0.005
     ERROR_ORIENTATION_THRESHOLD = 0.01
-    CONTROL_FREQUENCY = 100.0
+    CONTROL_FREQUENCY = 500.0
 
     pub_arm = rospy.Publisher(ROBOT_CONTROLLER_NAME, JointTrajectory, queue_size = 10)
     pub_finish_servo = rospy.Publisher("/servo_finish_task", Bool, queue_size= 10)
