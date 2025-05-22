@@ -7,7 +7,7 @@ from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import Header, Bool
 from geometry_msgs.msg import Pose
-
+import asyncio
 from servoing_pkg.kinematics import *
 from servoing_pkg.sym_kin import *
 from servoing_pkg.tools import *
@@ -87,8 +87,8 @@ def feedback(trans_0B, rot_0B, trans_0V, rot_0V, trans_EV, rot_EV, q, use_wrist)
 
     if use_wrist:
 
-        J = kin_sym_wrist(q)
-        # T = jac_sym_wrist(q)
+        J_8 = jac_sym_wrist(q)
+        # T = kyn_sym_wrist(q)
 
         # # Transform about x of pi rad and y of pi/2 rad
         # T_aux = np.array([[0, 0, 1, 0],
@@ -118,8 +118,13 @@ def feedback(trans_0B, rot_0B, trans_0V, rot_0V, trans_EV, rot_EV, q, use_wrist)
  
     # Compute the translation and orientation error vectors
     e_t = (t_0B - t_0V)
-    e_o = np.sin(theta)*r    
+    e_o = np.sin(theta)*r   
+    norm_e_t = np.linalg.norm(e_t, 2)
+    norm_e_o = np.linalg.norm(e_o, 2)
+    e_t = e_t/norm_e_t
+    # e_o = e_o/norm_e_o 
     e = np.vstack((e_t, e_o)).reshape((6, 1))
+    
 
     # Construct the interaction matrix for orientation control    
     I, Z = np.identity(3), np.zeros((3, 3))
@@ -127,26 +132,40 @@ def feedback(trans_0B, rot_0B, trans_0V, rot_0V, trans_EV, rot_EV, q, use_wrist)
     L = np.block([[I, Z], [Z, np.linalg.pinv(L_e)]])
 
     # Compute the pseudo-inverse of the Jacobian
+    T_aux = np.array([[0, 0, 1, 0],
+                    [0, -1, 0, 0],
+                    [1, 0, 0, 0],
+                    [0, 0, 0, 1]])
+    T_EV = np.matmul(T_aux, T_EV)
     t_EV = T_EV[0:3, 3]
     Adj = np.block([[I, -skew_matrix(t_EV)], [Z, I]])
     J = Adj @ J_8 
     J_pinv = np.linalg.pinv(J)
     
     # Define proportional gain matrices for position and orientation control
-    K_p, K_o = 0.05 * np.identity(3), 0.05 * np.identity(3)
+    if(norm_e_t < 0.1):
+        K_p = 2.0 * np.identity(3)*norm_e_t
+    else:
+        K_p = 1 * np.identity(3)*0.1
+    # if(norm_e_o < 0.2):
+    #     K_o = 1 * np.identity(3)*norm_e_o
+    # else:
+    K_o = 1 * np.identity(3)
     K = np.block([[K_p, Z], [Z, K_o]])
 
     # Compute the joint velocity command using the PBVS control law
     q_dot = np.linalg.multi_dot([J_pinv, L, K, e])
 
     # Return the computed joint velocities and the error vector
-    return q_dot, e
+    return q_dot, e , norm_e_t, norm_e_o
 
 def servoing(use_wrist, object_name, q, time):
     """Perform visual servoing."""
-    global count 
+    global count
+    global control_state 
     # Temporary variable for the time
     x = 0.0
+
 
     # Get the transformation between the object and the robot base
     while True:
@@ -160,7 +179,7 @@ def servoing(use_wrist, object_name, q, time):
     # Get the transformation between the end-effector and the tool
     while True:
         try:
-            (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, '/panda_link8', rospy.Time(0))
+            (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, '/right_hand_ee_link', rospy.Time(0))
             break
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
@@ -168,13 +187,13 @@ def servoing(use_wrist, object_name, q, time):
         
     while True:
         try:
-            (t_EV, q_EV) = listener.lookupTransform('/panda_link8',  '/panda_link8', rospy.Time(0))
+            (t_EV, q_EV) = listener.lookupTransform('/wrist_base',  '/right_hand_ee_link', rospy.Time(0))
             break
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue   
         
     # Get the control law and error state
-    q_dot, e = feedback(t_0B, q_0B, t_0V, q_0V, t_EV, q_EV, q, use_wrist)    
+    q_dot, e, nt , no = feedback(t_0B, q_0B, t_0V, q_0V, t_EV, q_EV, q, use_wrist)    
     arm_str = JointTrajectory()    
     point = JointTrajectoryPoint(
         positions=q[:7, 0].tolist(),
@@ -223,43 +242,90 @@ def servoing(use_wrist, object_name, q, time):
 
     # Check for goal
 
-    norm_e_t = np.linalg.norm(e[:3, :], 2)
-    norm_e_o = np.linalg.norm(e[3:, :], 2)
+    # norm_e_t = np.linalg.norm(e[:3, :], 2)
+    # norm_e_o = np.linalg.norm(e[3:, :], 2)
 
     errors = Pose()
-    errors.position.x = e[0,:]
-    errors.position.y = e[1,:]
-    errors.position.z = e[2,:]
+    errors.position.x = e[0,:]*nt
+    errors.position.y = e[1,:]*nt
+    errors.position.z = e[2,:]*nt
     errors.orientation.w = 0.0
-    errors.orientation.x = e[3,:]
-    errors.orientation.y = e[4,:]
-    errors.orientation.z = e[5,:]
+    errors.orientation.x = e[3,:]*no
+    errors.orientation.y = e[4,:]*no
+    errors.orientation.z = e[5,:]*no
     pub_err.publish(errors)
     count = count + 1
-    if(count > 1000000000):
-        sub_joints.unregister()
+ 
         
 
-    rospy.loginfo(f"Translation error norm: {norm_e_t}")
-    rospy.loginfo(f"Orientation error norm: {norm_e_o}")
+    rospy.loginfo(f"Translation error norm: {nt}")
+    rospy.loginfo(f"Orientation error norm: {no}")
 
-    if norm_e_t < ERROR_TRANSLATION_THRESHOLD and norm_e_o < ERROR_ORIENTATION_THRESHOLD:
+    if nt < ERROR_TRANSLATION_THRESHOLD and no < ERROR_ORIENTATION_THRESHOLD:
+        ret = Bool()
+        ret.data = True
+        pub_finish_servo.publish(ret)
+        sub_joints.unregister()
+        sub_wrist.unregister()
+        control_state = 0
         rospy.loginfo("Visual servoing completed!")
-        return True
+        return
 
 def callback_joints(joint_states):
 
-    q_arm = np.array(joint_states.position).reshape((7, 1))
+    global use_wrist
+    global q_arm
+    global q_wrist
+    global object
+    if(use_wrist == True):
+        if joint_states.name == ROBOT_JOINTS_NAME:
 
-    servoing(False, "object", q_arm, joint_states.header.stamp)
+            q_arm = np.array(joint_states.position).reshape((7, 1))
+            # mutex.acquire()
+            if(q_wrist != 0):
+                q = np.vstack((q_arm, q_wrist))
+                # mutex.release()
+                # print(q)
+                servoing(True, object, q, joint_states.header.stamp)
+        
+    else:
+        if joint_states.name == ROBOT_JOINTS_NAME:
+
+            q_arm = np.array(joint_states.position).reshape((7, 1))
+
+            servoing(False, "object", q_arm, joint_states.header.stamp)
  
+def callback_wrist(wrist_states):
+    global use_wrist
+    global q_wrist
+    global mutex
+    if(use_wrist == True):
+        # await mutex.acquire()
+        q_wrist = np.array(wrist_states.position[2]).reshape((1, 1))
+        # mutex.release()tart
+
+def start_callback(start):
+    global object
+    global sub_joints 
+    global sub_wrist
+    global control_state
+    if(control_state == 0):
+        if(start.data):
+            object = start.object_name
+            sub_joints = rospy.Subscriber("/robot/joint_states", JointState, callback_joints)
+            sub_wrist = rospy.Subscriber(WRIST_JOINTS_STATE, JointState, callback_wrist)
+            control_state = 1
 
 if __name__ == '__main__':
-    
+    mutex = asyncio.Lock()
     # Initialize the ROS node
     rospy.init_node('controller')
     listener = tf.TransformListener()
+    object = ""
     count = 0
+    q_arm = 0
+    q_wrist = 0
+    control_state = 0
     # Get parameters from the parameter server
     use_wrist = rospy.get_param('~use_wrist', False)
     simulator = rospy.get_param('~simulator', True)
@@ -293,34 +359,11 @@ if __name__ == '__main__':
     pub_arm = rospy.Publisher(ROBOT_CONTROLLER_NAME, JointTrajectory, queue_size=10)
     pub_finish_servo = rospy.Publisher("/servo_finish_task", Bool, queue_size= 10)
     pub_err = rospy.Publisher("/servo_error",Pose,queue_size=10)
-    sub_joints = rospy.Subscriber("/joint_states", JointState, callback_joints)
+    sub_joints = 0
+    sub_wrist = 0
+    start_sub = rospy.Subscriber("/servo_start_task", servo_init, start_callback)
 
     if use_wrist:
             pub_wrist = rospy.Publisher(WRIST_CONTROLLER_NAME, JointTrajectory, queue_size=10)
 
     rospy.spin()
-
-    # while not rospy.is_shutdown():
-
-    #     init_servo = rospy.wait_for_message("/servo_start_task", servo_init)
-
-    #     if init_servo.data == True:
-
-    #         rospy.loginfo("Starting visual servoing")
-    #         object_name = init_servo.object_name
-
-    #         if servoing(use_wrist, object_name):
-
-    #             flag_servo = Bool()
-    #             flag_servo.data  = False
-    #             pub_finish_servo.publish(flag_servo)
-                
-    #             rospy.loginfo("Visual servoing completed!")
-
-    #         else:
-
-    #             rospy.logerr("Visual servoing failed!")
-        
-    #     else :
-
-    #         continue
