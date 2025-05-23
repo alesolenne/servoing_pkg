@@ -1,8 +1,0 @@
-bool data
-string task
-bool use_wrist
-bool use_tool
-std_msgs/Float64 object_mass
----
-bool success
-string message

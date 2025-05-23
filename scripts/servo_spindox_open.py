@@ -28,27 +28,6 @@ def initialize_state(use_wrist):
                 return q
             else:
                 return q_arm
-
-def check_q_goal(q_goal, use_wrist):
-    """Check if the robot and wrist have reached the desired position."""
-    while True:
-        joint_states = rospy.wait_for_message(ROBOT_JOINTS_STATE, JointState)
-        if use_wrist:
-            wrist_states = rospy.wait_for_message(WRIST_JOINTS_STATE, JointState)
-
-        if joint_states.name == ROBOT_JOINTS_NAME and (not use_wrist or wrist_states.name == WRIST_JOINTS_NAME):
-            q_arm_actual = np.array(joint_states.position).reshape((7, 1))
-            if use_wrist:
-                q_wrist_actual = np.array(wrist_states.position[2]).reshape((1, 1))
-                q_actual = np.vstack((q_arm_actual, q_wrist_actual))
-                e_q = q_goal - q_actual
-
-            else:
-                q_actual = q_arm_actual
-                e_q = q_goal - q_arm_actual
-
-            if np.linalg.norm(e_q, 2) < 0.01:
-                return q_actual
         
 def feedback(trans_0B, rot_0B, trans_EV, rot_EV, q, use_wrist):
     """PBVS Visual servoing control law.
@@ -208,7 +187,6 @@ def servoing(use_wrist, object_name):
             pub_wrist.publish(wrist_str)
 
         # Check for goal
-        # q = check_q_goal(q, use_wrist)
         norm_e_t = np.linalg.norm(e[:3, :], 2)
         norm_e_o = np.linalg.norm(e[3:, :], 2)
         rospy.loginfo(f"Translation error norm: {norm_e_t}")
@@ -233,7 +211,6 @@ if __name__ == '__main__':
     # Get parameters from the parameter server
     use_wrist = rospy.get_param('~use_wrist', False)
     simulator = rospy.get_param('~simulator', True)
-    n_objects = rospy.get_param('~n_objects', 1)
 
     # Constants
     if simulator:

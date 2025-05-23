@@ -1,6 +1,0 @@
-<launch>
-
- <!-- Lancio del server per simulazione -->
-     <node pkg = "fake_servo" name = "fake_server" type = "server.py"/> 
-
-</launch>

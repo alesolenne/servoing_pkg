@@ -57,11 +57,9 @@ add_message_files(
   servo_init.msg
 )
 
-add_service_files(
-  FILES
-    grasp.srv
-    task.srv
-  )
+# add_service_files(
+#   FILES
+#   )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
