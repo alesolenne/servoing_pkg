@@ -7,11 +7,11 @@ from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import Header, Bool
 from geometry_msgs.msg import Pose
-import asyncio
+from pytransform3d.rotations import axis_angle_from_matrix
+
 from servoing_pkg.kinematics import *
 from servoing_pkg.sym_kin import *
 from servoing_pkg.tools import *
-from pytransform3d.rotations import axis_angle_from_matrix
 from servoing_pkg.msg import servo_init
         
 def feedback(trans_0B, rot_0B, trans_0V, rot_0V, trans_EV, rot_EV, q, use_wrist):
