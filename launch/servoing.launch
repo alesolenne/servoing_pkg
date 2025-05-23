@@ -1,6 +1,6 @@
 <launch>
 
-     <node pkg = "servoing_pkg" name = "servoing" type = "final_version.py" output='screen'> 
+     <node pkg = "servoing_pkg" name = "servoing" type = "servoing.py" output='screen'> 
 
           <param name="use_wrist" value="False" />
           <param name="use_tool" value="True" />
