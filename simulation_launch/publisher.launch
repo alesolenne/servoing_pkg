@@ -1,6 +1,0 @@
-<launch>
-
- <!-- Lancio del server per simulazione -->
-     <node pkg = "servoing_pkg" name = "publisher" type = "publisher.py"/> 
-
-</launch>

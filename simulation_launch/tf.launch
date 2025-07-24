@@ -2,8 +2,8 @@
 
  <!-- Pubblica le trasformazioni per la simulazione -->
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="tip" args="0.186, -0.2560, 0.0650, 0.0160   -0.4669   -0.0470   -0.8829 panda_link8 tool_extremity" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="object0" args="-0.182, 0.557, 0.616, -0.418, 0.590, 0.679, -0.124 panda_link0 object" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="object1" args="-0.0, 0.7932, 0.4959, -0.4302148, 0.5565271, 0.7103261, -0.0250935 panda_link0 object1" />
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="tip" args="0.186, -0.2560, 0.0650, 0.0160   -0.4669   -0.0470   -0.8829 right_hand_ee_link tool_extremity" /> -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="object0" args="0.101, 0.597, 0.632, 0.306, 0.431, 0.679, 0.509 robot_arm_link0 grasp_pose_object0" />
 
 </launch>
+
