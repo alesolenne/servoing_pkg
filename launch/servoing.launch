@@ -2,9 +2,9 @@
 
      <node pkg = "servoing_pkg" name = "servoing" type = "servoing.py" output='screen'> 
 
-          <param name="use_wrist" value="False" />
+          <param name="use_wrist" value="True" />
           <param name="use_tool" value="True" />
-          <param name="simulator" value="True" />
+          <param name="simulator" value="False" />
           
      </node>
 

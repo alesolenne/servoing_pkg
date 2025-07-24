@@ -97,15 +97,18 @@ def servoing(use_wrist, object_name, q):
 
     # Get the transformation between the object and the robot base
     while True:
+        print("Non trovo oggetto")
         try:
             (t_0B, q_0B) = listener.lookupTransform(ROBOT_ARM_LINK0, '/' + object_name, rospy.Time(0))
             break
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
 
-
     # Get the transformation between the end-effector and the tool
     while True:
+        print("Non trovo il tool")
+        print(ROBOT_ARM_LINK0)
+        print(EE_LINK)
         try:
             (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, EE_LINK, rospy.Time(0))
             break
@@ -114,6 +117,7 @@ def servoing(use_wrist, object_name, q):
             continue   
         
     while True:
+        print("Non trovo il Jacobiano")
         try:
             (t_EV, q_EV) = listener.lookupTransform(JAC_LINK,  EE_LINK, rospy.Time(0))
             break
@@ -221,7 +225,7 @@ def callback_wrist(wrist_states):
         q_wrist = np.array(wrist_states.position[2]).reshape((1, 1))
 
 def start_callback(start):
-
+    print("DIOPORCO")
     global object
     global sub_joints 
     global sub_wrist
@@ -237,6 +241,7 @@ def start_callback(start):
             if use_wrist:
                 sub_wrist = rospy.Subscriber(WRIST_JOINTS_STATE, JointState, callback_wrist)
             control_state = 1
+            print("Ci sono")
 
 if __name__ == '__main__':
 
