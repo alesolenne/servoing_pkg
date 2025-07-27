@@ -97,7 +97,6 @@ def servoing(use_wrist, object_name, q):
 
     # Get the transformation between the object and the robot base
     while True:
-        print("Non trovo oggetto")
         try:
             (t_0B, q_0B) = listener.lookupTransform(ROBOT_ARM_LINK0, '/' + object_name, rospy.Time(0))
             break
@@ -106,9 +105,6 @@ def servoing(use_wrist, object_name, q):
 
     # Get the transformation between the end-effector and the tool
     while True:
-        print("Non trovo il tool")
-        print(ROBOT_ARM_LINK0)
-        print(EE_LINK)
         try:
             (t_0V, q_0V) = listener.lookupTransform(ROBOT_ARM_LINK0, EE_LINK, rospy.Time(0))
             break
@@ -117,7 +113,6 @@ def servoing(use_wrist, object_name, q):
             continue   
         
     while True:
-        print("Non trovo il Jacobiano")
         try:
             (t_EV, q_EV) = listener.lookupTransform(JAC_LINK,  EE_LINK, rospy.Time(0))
             break
