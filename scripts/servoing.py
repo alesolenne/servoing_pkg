@@ -220,7 +220,6 @@ def callback_wrist(wrist_states):
         q_wrist = np.array(wrist_states.position[2]).reshape((1, 1))
 
 def start_callback(start):
-    print("DIOPORCO")
     global object
     global sub_joints 
     global sub_wrist
@@ -236,7 +235,6 @@ def start_callback(start):
             if use_wrist:
                 sub_wrist = rospy.Subscriber(WRIST_JOINTS_STATE, JointState, callback_wrist)
             control_state = 1
-            print("Ci sono")
 
 if __name__ == '__main__':
 
